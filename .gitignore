@@ -9,9 +9,13 @@ CMakeCache.txt
 CMakeFiles/
 CMakeScripts/
 Testing/
+html/
+latex/
 Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+doxygen_sqlite3.db
+Doxyfile

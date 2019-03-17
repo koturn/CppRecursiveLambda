@@ -237,6 +237,13 @@ endif()
 string(REGEX REPLACE "^ +" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 
+option(ENABLE_DOXYGEN "Enable to generate document with Doxygen." OFF)
+if(ENABLE_DOXYGEN)
+  include(cmake/doxygen.cmake)
+  add_doxygen(fibonacci)
+endif()
+
+
 message(STATUS "Variables")
 
 foreach(VARNAME

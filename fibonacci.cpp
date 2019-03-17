@@ -3,13 +3,21 @@
 #include <functional>
 #include <iostream>
 #include <string>
+#include <utility>
 
 #define ALLOW_SAME_ASM_RESULT_CODE
 
+//! Default argument for fibonnaci function.
 constexpr std::uint64_t kN = 45;
+//! Default number of trials to measure average execute time.
 constexpr int knTrial = 5;
 
 
+/*!
+ * @brief Normal fibonnaci function implemented with recursion.
+ * @param [in] n  An argument for fibonacci function.
+ * @return n-th Fibonacci number.
+ */
 static inline std::uint64_t
 fib(std::uint64_t n) noexcept
 {
@@ -17,6 +25,12 @@ fib(std::uint64_t n) noexcept
 }
 
 #ifdef ALLOW_SAME_ASM_RESULT_CODE
+/*!
+ * @brief Create fixed function which take myself as the first argument.
+ * @tparam F  Type of function.
+ * @param [in] f  A function.
+ * @return Fixed function, which first argument is myself.
+ */
 template<typename F>
 inline constexpr decltype(auto)
 fix(F&& f) noexcept
@@ -28,14 +42,28 @@ fix(F&& f) noexcept
 #endif  // ALLOW_SAME_ASM_RESULT_CODE
 
 
+/*!
+ * @brief Create fixed function instance.
+ * @tparam F  Type of function.
+ */
 template<typename F>
 class FixPoint : F
 {
 public:
+  /*!
+   * @brief Ctor. Initialize parent function, such as a lambda.
+   * @param [in] f A function
+   */
   FixPoint(F&& f) noexcept
     : F(std::forward<F>(f))
   {}
 
+  /*!
+   * @brief Call target function via parent lambda.
+   * @tparam Args Argument types.
+   * @param [in] args  Argument for target function.
+   * @return Result of target function calling.
+   */
   template<typename... Args>
   constexpr decltype(auto)
   operator()(Args&&... args) const
@@ -44,6 +72,13 @@ public:
   }
 };  // class FixPoint
 
+
+/*!
+ * @brief Helper function of type argument inference of FixPoint<F>.
+ * @tparam F Type of function
+ * @param [in] f  A function.
+ * @return Instance of FixPoint<F>.
+ */
 template<typename F>
 static inline constexpr auto
 makeFixPoint(F&& f) noexcept
@@ -53,9 +88,18 @@ makeFixPoint(F&& f) noexcept
 
 
 #ifdef ALLOW_SAME_ASM_RESULT_CODE
+/*!
+ * @brief Fibonacci function implementation with functional object.
+ * Create instance to call function at each time.
+ */
 class Fibonacci01
 {
 public:
+  /*!
+   * @brief Body of fibonacci function.
+   * @param [in] n  An argument for fibonacci function.
+   * @return N-th fibonacci number.
+   */
   constexpr std::uint64_t
   operator()(std::uint64_t n) const noexcept
   {
@@ -64,9 +108,20 @@ public:
 };  // struct Fibonacci01
 
 
+/*!
+ * @brief Fibonacci function implementation with functional object.
+ * Call operator() using "this" pointer.
+ */
 class Fibonacci02
 {
 public:
+  /*!
+   * @brief Body of fibonacci function.
+   * Call operator() via "this" pointer.
+   *
+   * @param [in] n  An argument for fibonacci function.
+   * @return N-th fibonacci number.
+   */
   constexpr std::uint64_t
   operator()(std::uint64_t n) const noexcept
   {
@@ -76,9 +131,22 @@ public:
 #endif  // ALLOW_SAME_ASM_RESULT_CODE
 
 
+/*!
+ * @brief Fibonacci function implementation with functional object.
+ * A compiler may generate same code as Fibonacci02.
+ *
+ * Call operator() directory.
+ */
 class Fibonacci03
 {
 public:
+  /*!
+   * @brief Body of fibonacci function.
+   * Call operator() directory.
+   *
+   * @param [in] n  An argument for fibonacci function.
+   * @return N-th fibonacci number.
+   */
   constexpr std::uint64_t
   operator()(std::uint64_t n) const noexcept
   {
@@ -88,9 +156,18 @@ public:
 
 
 #ifdef ALLOW_SAME_ASM_RESULT_CODE
+/*!
+ * @brief Fibonacci function implementation with functional object.
+ */
 class Fibonacci04
 {
 public:
+  /*!
+   * @brief Body of fibonacci function which takes myself as the first argument.
+   * @param [in] f  Myself
+   * @param [in] n  Argument for fibonacci function.
+   * @return N-th fibonacci number.
+   */
   constexpr std::uint64_t
   operator()(Fibonacci04 f, std::uint64_t n) const noexcept
   {
@@ -100,8 +177,15 @@ public:
 #endif  // ALLOW_SAME_ASM_RESULT_CODE
 
 
-
-
+/*!
+ * @brief Measure average execution time of given function.
+ * @tparam F     Type of target function.
+ * @tparam Args  Types of arguments for the function.
+ * @param [in] nTrial  Number of trials.
+ * @param [in] f       Target function.
+ * @param [in] args    Argument for target function.
+ * @return Average of execution time.
+ */
 template<
   typename F,
   typename... Args
@@ -109,7 +193,7 @@ template<
 static inline auto
 measureTime(int nTrial, F&& f, Args&&... args) noexcept
 {
-  auto start = std::chrono::high_resolution_clock::now();
+  const auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < nTrial; i++) {
     f(std::forward<Args>(args)...);
   }
@@ -117,11 +201,20 @@ measureTime(int nTrial, F&& f, Args&&... args) noexcept
 }
 
 
+/*!
+ * @brief Measure average time of given function and show its result to stdout.
+ * @tparam F  Type of target function.
+ * @tparam Args  Types of arguments for the function.
+ * @param [in] title   Title string.
+ * @param [in] nTrial  Number of trials.
+ * @param [in] f       Target function.
+ * @param [in] args    Argument for target function.
+ */
 template<
   typename F,
   typename... Args
 >
-static inline auto
+static inline void
 showElapsedTime(const std::string& title, int nTrial, F&& f, Args&&... args) noexcept
 {
   std::cout << title << ": " << measureTime(nTrial, std::forward<F>(f), std::forward<Args>(args)...) << " ms" << std::endl;
@@ -130,6 +223,12 @@ showElapsedTime(const std::string& title, int nTrial, F&& f, Args&&... args) noe
 
 
 
+/*!
+ * @brief Entry point of this program
+ * @param [in] argc  Number of command-line arguments.
+ * @param [in] argv  Command-line arguments.
+ * @return Status-code. (0 means succeeded, otherwiese something wrong)
+ */
 int
 main(int argc, const char* argv[])
 {
