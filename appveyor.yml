@@ -1,0 +1,13 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+build_script:
+- cmd: >-
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_BUILD_TYPE=Release -G "NMake Makefiles"
+    nmake
+test_script:
+- cmd: "build\fibonacci.exe"
+artifacts:
+- path: build/fibonacci.exe
+  name: C++ Recursive Lambda Sample and its Performance Test
