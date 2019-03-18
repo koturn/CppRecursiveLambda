@@ -1,6 +1,9 @@
 CppRecursiveLambda
 ==================
 
+[![Test status](https://travis-ci.org/koturn/CppRecursiveLambda.png)](https://travis-ci.org/koturn/CppRecursiveLambda "Travis CI | koturn/CppRecursiveLambda")
+[![Test status](https://ci.appveyor.com/api/projects/status/q4ihqskhywuj98yc?svg=true)](https://ci.appveyor.com/project/koturn/cpprecursivelambda "AppVeyor | koturn/CppRecursiveLambda")
+
 A sample code of recursive lambda expression and its performance test.
 
 ## Summary
