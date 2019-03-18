@@ -1,5 +1,7 @@
 version: 1.0.{build}
 image: Visual Studio 2017
+install:
+- cmd: '"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"'
 build_script:
 - cmd: >-
     mkdir build
@@ -10,7 +12,7 @@ build_script:
 
     nmake
 test_script:
-- cmd: "build\fibonacci.exe"
+- cmd: '"build\fibonacci.exe"'
 artifacts:
 - path: build/fibonacci.exe
   name: C++ Recursive Lambda Sample and its Performance Test
