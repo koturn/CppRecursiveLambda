@@ -12,7 +12,7 @@ build_script:
 
     nmake
 test_script:
-- cmd: '"build\fibonacci.exe"'
+- cmd: '"fibonacci.exe"'
 artifacts:
 - path: build/fibonacci.exe
   name: C++ Recursive Lambda Sample and its Performance Test
