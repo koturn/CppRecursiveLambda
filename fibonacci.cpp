@@ -257,6 +257,8 @@ public:
 #endif  // ALLOW_SAME_ASM_RESULT_CODE
 
 
+namespace
+{
 /*!
  * @brief Measure average execution time of given function.
  * @tparam F     Type of target function.
@@ -270,14 +272,17 @@ template <
   typename F,
   typename... Args
 >
-static inline auto
+inline auto
 measureTime(int nTrial, F&& f, Args&&... args) noexcept
 {
-  const auto start = std::chrono::high_resolution_clock::now();
+  auto elapsed = std::chrono::nanoseconds::zero();
   for (int i = 0; i < nTrial; i++) {
-    f(std::forward<Args>(args)...);
+    // Prevent clang optimization of for-loop
+    const auto start = std::chrono::high_resolution_clock::now();
+    static_cast<volatile void>(f(std::forward<Args>(args)...));
+    elapsed += std::chrono::high_resolution_clock::now() - start;
   }
-  return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count() / (1000.0 * knTrial);
+  return std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() / (1000.0 * knTrial);
 }
 
 
@@ -294,11 +299,12 @@ template <
   typename F,
   typename... Args
 >
-static inline void
+inline void
 showElapsedTime(const std::string& title, int nTrial, F&& f, Args&&... args) noexcept
 {
   std::cout << title << ": " << measureTime(nTrial, std::forward<F>(f), std::forward<Args>(args)...) << " ms" << std::endl;
 }
+}  // namespace
 
 
 
