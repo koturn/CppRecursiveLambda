@@ -18,11 +18,14 @@ constexpr int knTrial = 5;
  * @param [in] n  An argument for fibonacci function.
  * @return n-th Fibonacci number.
  */
-static inline std::uint64_t
+namespace
+{
+inline std::uint64_t
 fib(std::uint64_t n) noexcept
 {
   return n < 2 ? n : (fib(n - 1) + fib(n - 2));
 }
+
 
 #ifdef ALLOW_SAME_ASM_RESULT_CODE
 /*!
@@ -31,13 +34,13 @@ fib(std::uint64_t n) noexcept
  * @param [in] f  A function.
  * @return Fixed function, which first argument is myself.
  */
-template<typename F>
+template <typename F>
 #if defined(__has_cpp_attribute) && __has_cpp_attribute(nodiscard)
 [[nodiscard]]
 #elif defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ >= 4)
 __attribute__((warn_unused_result))
 #endif  // defined(__has_cpp_attribute) && __has_cpp_attribute(nodiscard)
-static inline constexpr decltype(auto)
+inline constexpr decltype(auto)
 fix(F&& f) noexcept
 {
   return [f = std::forward<F>(f)](auto&&... args) {
@@ -45,29 +48,41 @@ fix(F&& f) noexcept
   };
 }
 #endif  // ALLOW_SAME_ASM_RESULT_CODE
+}  // namespace
 
 
 /*!
  * @brief Create fixed function instance.
  * @tparam F  Type of function.
  */
-template<typename F>
+template <typename F>
 class
 #if defined(__has_cpp_attribute) && __has_cpp_attribute(nodiscard)
 [[nodiscard]]
-#elif defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ >= 4)
-__attribute__((warn_unused_result))
 #endif  // defined(__has_cpp_attribute) && __has_cpp_attribute(nodiscard)
-FixPoint : private F
+FixPoint final : private F
 {
 public:
   /*!
    * @brief Ctor. Initialize parent function, such as a lambda.
    * @param [in] f A function
    */
-  FixPoint(F&& f) noexcept
-    : F(std::forward<F>(f))
-  {}
+  explicit constexpr FixPoint(F&& f) noexcept
+    : F{std::forward<F>(f)}
+  {
+  }
+
+#if defined(__cpp_deduction_guides)
+  /*!
+   * @brief Ctor. For deducation guides.
+   * @param [in] f A function
+   */
+  template <typename G>
+  explicit constexpr FixPoint(G&& g) noexcept
+    : F{std::forward<std::decay_t<G>>(g)}
+  {
+  }
+#endif  // defined(__cpp_deduction_guides)
 
   /*!
    * @brief Call target function via parent lambda.
@@ -75,11 +90,11 @@ public:
    * @param [in] args  Argument for target function.
    * @return Result of target function calling.
    */
-  template<typename... Args>
+  template <typename... Args>
   constexpr decltype(auto)
   operator()(Args&&... args) const
 #if !defined(__GNUC__) || defined(__clang__) || __GNUC__ >= 9
-    noexcept(noexcept(F::operator()(std::declval<FixPoint>(), std::declval<Args&&>()...)))
+    noexcept(noexcept(F::operator()(std::declval<FixPoint>(), std::declval<Args>()...)))
 #endif  // !defined(__GNUC__) || defined(__clang__) || __GNUC__ >= 9
   {
     return F::operator()(*this, std::forward<Args>(args)...);
@@ -87,18 +102,28 @@ public:
 };  // class FixPoint
 
 
+namespace
+{
 /*!
  * @brief Helper function of type argument inference of FixPoint<F>.
  * @tparam F Type of function
  * @param [in] f  A function.
  * @return Instance of FixPoint<F>.
  */
-template<typename F>
-static inline constexpr auto
+template <typename F>
+#if !defined(__has_cpp_attribute) || !__has_cpp_attribute(nodiscard)
+#  if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ >= 4)
+__attribute__((warn_unused_result))
+#  elif defined(_MSC_VER) && _MSC_VER >= 1700 && defined(_Check_return_)
+_Check_return_
+#  endif
+#endif
+inline constexpr decltype(auto)
 makeFixPoint(F&& f) noexcept
 {
-  return FixPoint<F>{std::forward<F>(f)};
+  return FixPoint<std::decay_t<F>>{std::forward<std::decay_t<F>>(f)};
 }
+}  // namespace
 
 
 #ifdef ALLOW_SAME_ASM_RESULT_CODE
@@ -200,7 +225,7 @@ public:
  * @param [in] args    Argument for target function.
  * @return Average of execution time.
  */
-template<
+template <
   typename F,
   typename... Args
 >
@@ -224,7 +249,7 @@ measureTime(int nTrial, F&& f, Args&&... args) noexcept
  * @param [in] f       Target function.
  * @param [in] args    Argument for target function.
  */
-template<
+template <
   typename F,
   typename... Args
 >
