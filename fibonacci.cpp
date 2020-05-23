@@ -127,6 +127,47 @@ makeFixPoint(F&& f) noexcept
 
 
 #ifdef ALLOW_SAME_ASM_RESULT_CODE
+namespace detail
+{
+
+template <template <typename ...> class T>
+struct create
+{
+  template <typename ...X>
+  constexpr T<typename std::decay<X>::type...>
+  operator()(X&& ...x) const {
+    return T<typename std::decay<X>::type...>{
+      static_cast<X&&>(x)...
+    };
+  }
+};  // struct create
+
+}  // namespace detail
+
+
+template <typename F>
+struct fix_t;
+
+constexpr detail::create<fix_t> fix2{};
+
+template <typename F>
+struct fix_t {
+  F f;
+
+  template <typename ...X>
+  constexpr decltype(auto) operator()(X&& ...x) const&
+  { return f(fix2(f), static_cast<X&&>(x)...); }
+
+  template <typename ...X>
+  constexpr decltype(auto) operator()(X&& ...x) &
+  { return f(fix2(f), static_cast<X&&>(x)...); }
+
+  template <typename ...X>
+  constexpr decltype(auto) operator()(X&& ...x) &&
+  { return std::move(f)(fix2(f), static_cast<X&&>(x)...); }
+};
+
+
 /*!
  * @brief Fibonacci function implementation with functional object.
  * Create instance to call function at each time.
@@ -307,6 +348,18 @@ main(int argc, const char* argv[])
     });
 
 #ifdef ALLOW_SAME_ASM_RESULT_CODE
+    showElapsedTime("boost hana impl", nTrial, [n] {
+      const volatile auto result = fix2([](auto f, std::uint64_t n) -> std::uint64_t {
+        return n < 2 ? n : (f(n - 1) + f(n - 2));
+      })(n);
+    });
+
+    showElapsedTime("boost hana impl (auto&&)", nTrial, [n] {
+      const volatile auto result = fix2([](auto&& f, std::uint64_t n) -> std::uint64_t {
+        return n < 2 ? n : (f(n - 1) + f(n - 2));
+      })(n);
+    });
+
     showElapsedTime("Y-combinator", nTrial, [n] {
       const volatile auto result = [](auto f) {
         return [=](auto&&... args) {
@@ -335,9 +388,7 @@ main(int argc, const char* argv[])
       })(n);
     });
 #  endif  // __clang__
-#endif  // ALLOW_SAME_ASM_RESULT_CODE
 
-#ifdef ALLOW_SAME_ASM_RESULT_CODE
     showElapsedTime("Fibonacci01 class", nTrial, [n] { const volatile auto result = Fibonacci01{}(n); });
 
     showElapsedTime("Fibonacci02 class", nTrial, [n] { const volatile auto result = Fibonacci02{}(n); });
