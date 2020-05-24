@@ -20,7 +20,7 @@ constexpr int knTrial = 5;
  */
 namespace
 {
-inline std::uint64_t
+inline constexpr std::uint64_t
 fib(std::uint64_t n) noexcept
 {
   return n < 2 ? n : (fib(n - 1) + fib(n - 2));
@@ -282,7 +282,7 @@ measureTime(int nTrial, F&& f, Args&&... args) noexcept
     static_cast<volatile void>(f(std::forward<Args>(args)...));
     elapsed += std::chrono::high_resolution_clock::now() - start;
   }
-  return std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() / (1000.0 * knTrial);
+  return static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count()) / (1000.0 * knTrial);
 }
 
 
@@ -322,7 +322,10 @@ main(int argc, const char* argv[])
     const auto n = argc > 1 ? std::stoull(argv[1]) : kN;  // Prevent compile time calculation
     const auto nTrial = argc > 2 ? std::stoi(argv[2]) : knTrial;  // Prevent compile time calculation
 
-    showElapsedTime("Normal function", nTrial, [n] { const volatile auto result = fib(n); });
+    showElapsedTime("Normal function", nTrial, [n] {
+      const volatile auto result = fib(n);
+      static_cast<void>(result);
+    });
 
     showElapsedTime("std::function<>", nTrial, [n] {
       std::function<std::uint64_t(std::uint64_t)> fib{
@@ -338,6 +341,7 @@ main(int argc, const char* argv[])
       const volatile auto result = fix([](auto f, std::uint64_t n) -> std::uint64_t {
         return n < 2 ? n : (f(f, n - 1) + f(f, n - 2));
       })(n);
+      static_cast<void>(result);
     });
 #endif  // ALLOW_SAME_ASM_RESULT_CODE
 
@@ -345,12 +349,14 @@ main(int argc, const char* argv[])
       const volatile auto result = makeFixPoint([](auto f, std::uint64_t n) -> std::uint64_t {
         return n < 2 ? n : (f(n - 1) + f(n - 2));
       })(n);
+      static_cast<void>(result);
     });
 
     showElapsedTime("FixPoint class (auto&&)", nTrial, [n] {
       const volatile auto result = makeFixPoint([](auto&& f, std::uint64_t n) -> std::uint64_t {
         return n < 2 ? n : (f(n - 1) + f(n - 2));
       })(n);
+      static_cast<void>(result);
     });
 
 #ifdef ALLOW_SAME_ASM_RESULT_CODE
@@ -358,12 +364,14 @@ main(int argc, const char* argv[])
       const volatile auto result = fix2([](auto f, std::uint64_t n) -> std::uint64_t {
         return n < 2 ? n : (f(n - 1) + f(n - 2));
       })(n);
+      static_cast<void>(result);
     });
 
     showElapsedTime("boost hana impl (auto&&)", nTrial, [n] {
       const volatile auto result = fix2([](auto&& f, std::uint64_t n) -> std::uint64_t {
         return n < 2 ? n : (f(n - 1) + f(n - 2));
       })(n);
+      static_cast<void>(result);
     });
 
     showElapsedTime("Y-combinator", nTrial, [n] {
@@ -374,6 +382,7 @@ main(int argc, const char* argv[])
       }([](auto f, std::uint64_t n) -> std::uint64_t {
         return n < 2 ? n : f(f, n - 1) + f(f, n - 2);
       })(n);
+      static_cast<void>(result);
     });
 
 #  ifndef __clang__
@@ -392,20 +401,32 @@ main(int argc, const char* argv[])
       }([](auto f, std::uint64_t n) -> std::uint64_t {
         return n < 2 ? n : (f(n - 1) + f(n - 2));
       })(n);
+      static_cast<void>(result);
     });
 #  endif  // __clang__
 
-    showElapsedTime("Fibonacci01 class", nTrial, [n] { const volatile auto result = Fibonacci01{}(n); });
+    showElapsedTime("Fibonacci01 class", nTrial, [n] {
+      const volatile auto result = Fibonacci01{}(n);
+      static_cast<void>(result);
+    });
 
-    showElapsedTime("Fibonacci02 class", nTrial, [n] { const volatile auto result = Fibonacci02{}(n); });
+    showElapsedTime("Fibonacci02 class", nTrial, [n] {
+      const volatile auto result = Fibonacci02{}(n);
+      static_cast<void>(result);
+    });
+
 #endif  // ALLOW_SAME_ASM_RESULT_CODE
 
-    showElapsedTime("Fibonacci03 class", nTrial, [n] { const volatile auto result = Fibonacci03{}(n); });
+    showElapsedTime("Fibonacci03 class", nTrial, [n] {
+      const volatile auto result = Fibonacci03{}(n);
+      static_cast<void>(result);
+    });
 
 #ifdef ALLOW_SAME_ASM_RESULT_CODE
     showElapsedTime("Fibonacci04 class", nTrial, [n] {
       Fibonacci04 f;
       const volatile auto result = f(f, n);
+      static_cast<void>(result);
     });
 #endif  // ALLOW_SAME_ASM_RESULT_CODE
   } catch (const std::exception& e) {
