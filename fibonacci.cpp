@@ -39,6 +39,8 @@ template <typename F>
 [[nodiscard]]
 #elif defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ >= 4)
 __attribute__((warn_unused_result))
+#elif defined(_MSC_VER) && _MSC_VER >= 1700 && defined(_Check_return_)
+_Check_return_
 #endif  // defined(__has_cpp_attribute) && __has_cpp_attribute(nodiscard)
 inline constexpr decltype(auto)
 fix(F&& f) noexcept
