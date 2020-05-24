@@ -65,24 +65,13 @@ FixPoint final : private F
 public:
   /*!
    * @brief Ctor. Initialize parent function, such as a lambda.
-   * @param [in] f A function
-   */
-  explicit constexpr FixPoint(F&& f) noexcept
-    : F{std::forward<F>(f)}
-  {
-  }
-
-#if defined(__cpp_deduction_guides)
-  /*!
-   * @brief Ctor. For deducation guides.
-   * @param [in] f A function
+   * @param [in] f  A function
+   * @tparam G  Type of function
    */
   template <typename G>
   explicit constexpr FixPoint(G&& g) noexcept
-    : F{std::forward<std::decay_t<G>>(g)}
-  {
-  }
-#endif  // defined(__cpp_deduction_guides)
+    : F{std::forward<G>(g)}
+  {}
 
   /*!
    * @brief Call target function via parent lambda.
@@ -100,6 +89,16 @@ public:
     return F::operator()(*this, std::forward<Args>(args)...);
   }
 };  // class FixPoint
+
+
+#if defined(__cpp_deduction_guides)
+template <
+  typename... Fs,
+  std::enable_if_t<sizeof...(Fs) != 0, std::nullptr_t> = nullptr
+>
+FixPoint(Fs&&...)
+  -> FixPoint<std::decay_t<Fs>...>;
+#endif  // defined(__cpp_deduction_guides)
 
 
 namespace
@@ -135,7 +134,8 @@ struct create
 {
   template <typename ...X>
   constexpr T<typename std::decay<X>::type...>
-  operator()(X&& ...x) const {
+  operator()(X&& ...x) const
+  {
     return T<typename std::decay<X>::type...>{
       static_cast<X&&>(x)...
     };
@@ -151,20 +151,30 @@ struct fix_t;
 constexpr detail::create<fix_t> fix2{};
 
 template <typename F>
-struct fix_t {
+struct fix_t
+{
   F f;
 
   template <typename ...X>
-  constexpr decltype(auto) operator()(X&& ...x) const&
-  { return f(fix2(f), static_cast<X&&>(x)...); }
+  constexpr decltype(auto)
+  operator()(X&& ...x) const&
+  {
+    return f(fix2(f), static_cast<X&&>(x)...);
+  }
 
   template <typename ...X>
-  constexpr decltype(auto) operator()(X&& ...x) &
-  { return f(fix2(f), static_cast<X&&>(x)...); }
+  constexpr decltype(auto)
+  operator()(X&& ...x) &
+  {
+    return f(fix2(f), static_cast<X&&>(x)...);
+  }
 
   template <typename ...X>
-  constexpr decltype(auto) operator()(X&& ...x) &&
-  { return std::move(f)(fix2(f), static_cast<X&&>(x)...); }
+  constexpr decltype(auto)
+  operator()(X&& ...x) &&
+  {
+    return std::move(f)(fix2(f), static_cast<X&&>(x)...);
+  }
 };
 
 
